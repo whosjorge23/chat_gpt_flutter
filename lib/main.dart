@@ -1,4 +1,5 @@
 import 'package:chat_gpt_flutter/model/country.dart';
+import 'package:chat_gpt_flutter/service/service_api.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -55,16 +56,21 @@ class _NationalizeNameFormState extends State<NationalizeNameForm> {
             onPressed: () async {
               if (_formKey.currentState!.validate()) {
                 _formKey.currentState?.save();
-                var uri = Uri.parse('https://api.nationalize.io/?name=$_name');
-                var response = await http.get(uri);
-                var jsonResponse = jsonDecode(response.body);
-                _countries = (jsonResponse['country'] as List)
-                    .map((e) => Country.fromJson(e))
-                    .toList();
+                ServiceApi nationalizeNameService = ServiceApi();
+                var countries = await nationalizeNameService.fetchName(_name);
+                setState(() {
+                  _countries = countries;
+                });
+                // var uri = Uri.parse('https://api.nationalize.io/?name=$_name');
+                // var response = await http.get(uri);
+                // var jsonResponse = jsonDecode(response.body);
+                // _countries = (jsonResponse['country'] as List)
+                //     .map((e) => Country.fromJson(e))
+                //     .toList();
                 setState(() {});
               }
             },
-            child: Text('Submit'),
+            child: Text('Find Nationality'),
           ),
           Expanded(
             child: ListView.builder(
@@ -75,7 +81,7 @@ class _NationalizeNameFormState extends State<NationalizeNameForm> {
                   title: Text(
                       'Country: ${countriesDictionary[country.country_id] ?? ""}'),
                   subtitle: Text(
-                      'Probability: ${(country.probability * 100).toStringAsFixed(2)}%'),
+                      'Probability: ${(country.probability * 100).toStringAsFixed(2) ?? 0}%'),
                 );
               },
             ),
