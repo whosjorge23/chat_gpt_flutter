@@ -1,94 +1,69 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 void main() {
-  runApp(const MyApp());
+  runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
+      title: 'Nationalize Name',
+      home: Scaffold(
+        appBar: AppBar(
+          title: Text('Nationalize Name'),
+        ),
+        body: NationalizeNameForm(),
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  final String title;
-
+class NationalizeNameForm extends StatefulWidget {
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  _NationalizeNameFormState createState() => _NationalizeNameFormState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  final _usernameController = TextEditingController();
-  final _passwordController = TextEditingController();
-  bool _obscureText = true;
-  String _errorMessage = "";
-
-  void _submit() async {
-    // if (_usernameController.text.isEmpty || _passwordController.text.isEmpty) {
-    //   setState(() {
-    //     _errorMessage = "Il nome utente e la password sono obbligatori";
-    //   });
-    //   return;
-    // }
-    // setState(() {
-    //   _errorMessage = "";
-    // });
-    // // invia le credenziali al tuo server per l'autenticazione
-    // // e gestisci la risposta
-    // final response =
-    //     await login(_usernameController.text, _passwordController.text);
-    // if (response.statusCode == 200) {
-    //   // autenticazione riuscita
-    //   // reindirizza alla schermata principale dell'app
-    //   Navigator.of(context).pushReplacementNamed("/home");
-    // } else {
-    //   setState(() {
-    //     _errorMessage = "Autenticazione fallita";
-    //   });
-    // }
-  }
+class _NationalizeNameFormState extends State<NationalizeNameForm> {
+  final _formKey = GlobalKey<FormState>();
+  String _name = '';
+  String _result = '';
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Padding(
-        padding: EdgeInsets.all(20),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            if (_errorMessage != null)
-              Text(
-                _errorMessage,
-                style: TextStyle(color: Colors.red),
-              ),
-            TextField(
-              controller: _usernameController,
-              decoration: InputDecoration(labelText: "Nome Utente"),
-            ),
-            TextField(
-              controller: _passwordController,
-              decoration: InputDecoration(labelText: "Password"),
-              obscureText: _obscureText,
-            ),
-            SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _submit,
-              child: Text("Accedi"),
-            ),
-          ],
-        ),
+    return Form(
+      key: _formKey,
+      child: Column(
+        children: <Widget>[
+          TextFormField(
+            decoration: InputDecoration(labelText: 'Name'),
+            validator: (value) {
+              if (value == null) {
+                return 'Please enter a name';
+              }
+              return null;
+            },
+            onSaved: (value) => _name = value!,
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (_formKey.currentState!.validate()) {
+                _formKey.currentState?.save();
+                var uri = Uri.parse('https://api.nationalize.io/?name=$_name');
+                var response = await http.get(uri);
+                var jsonResponse = jsonDecode(response.body);
+                var country = jsonResponse['country'][0];
+                _result =
+                    'Country: ${country['country_id']}, Probability: ${country['probability']}';
+                setState(() {});
+              }
+            },
+            child: Text('Submit'),
+          ),
+          Text(_result),
+        ],
       ),
     );
   }
