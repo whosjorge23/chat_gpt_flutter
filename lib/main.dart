@@ -1,3 +1,4 @@
+import 'package:chat_gpt_flutter/model/country.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -29,7 +30,7 @@ class NationalizeNameForm extends StatefulWidget {
 class _NationalizeNameFormState extends State<NationalizeNameForm> {
   final _formKey = GlobalKey<FormState>();
   String _name = '';
-  String _result = '';
+  List<Country> _countries = [];
 
   @override
   Widget build(BuildContext context) {
@@ -37,15 +38,18 @@ class _NationalizeNameFormState extends State<NationalizeNameForm> {
       key: _formKey,
       child: Column(
         children: <Widget>[
-          TextFormField(
-            decoration: InputDecoration(labelText: 'Name'),
-            validator: (value) {
-              if (value == null) {
-                return 'Please enter a name';
-              }
-              return null;
-            },
-            onSaved: (value) => _name = value!,
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: TextFormField(
+              decoration: InputDecoration(labelText: 'Name'),
+              validator: (value) {
+                if (value == null) {
+                  return 'Please enter a name';
+                }
+                return null;
+              },
+              onSaved: (value) => _name = value!,
+            ),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -54,15 +58,28 @@ class _NationalizeNameFormState extends State<NationalizeNameForm> {
                 var uri = Uri.parse('https://api.nationalize.io/?name=$_name');
                 var response = await http.get(uri);
                 var jsonResponse = jsonDecode(response.body);
-                var country = jsonResponse['country'][0];
-                _result =
-                    'Country: ${country['country_id']}, Probability: ${country['probability']}';
+                _countries = (jsonResponse['country'] as List)
+                    .map((e) => Country.fromJson(e))
+                    .toList();
                 setState(() {});
               }
             },
             child: Text('Submit'),
           ),
-          Text(_result),
+          Expanded(
+            child: ListView.builder(
+              itemCount: _countries.length,
+              itemBuilder: (context, index) {
+                var country = _countries[index];
+                return ListTile(
+                  title: Text(
+                      'Country: ${countriesDictionary[country.country_id] ?? ""}'),
+                  subtitle: Text(
+                      'Probability: ${(country.probability * 100).toStringAsFixed(2)}%'),
+                );
+              },
+            ),
+          ),
         ],
       ),
     );
